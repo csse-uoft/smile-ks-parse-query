@@ -65,4 +65,4 @@ Term 2: Run ParseQuery example
 ## To run KnowledgeSource Listener
 `conda activate PyParseQuery`
 `cd src`
-`python -m smile_ks_parse_query.parse_query_listener`
+`python -m smile_ks_parse_query.listener`

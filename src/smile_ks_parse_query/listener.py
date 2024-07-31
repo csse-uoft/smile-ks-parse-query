@@ -34,7 +34,8 @@ class ParseQuery(KnowledgeSource):
     corenlp_output: Dict
         Annotated output of StanfordCoreNLP parser
     """
-
+    current_trace = None
+    current_ks_ar = None
     def __init__(self, hypothesis_ids, ks_ar, trace):
         fields = [v for v in Ks.ALL_KS_FORMATS.values() if v[0] == self.__class__.__name__][0]
         super().__init__(fields[1], fields[2], fields[3], trace, hypothesis_ids, ks_ar)
@@ -62,7 +63,10 @@ class ParseQuery(KnowledgeSource):
             if len(ks_ar) > 0:
                 ks_ar = ks_ar[0]
                 cls.logger(trace_id=ks_ar.trace, text=f"Processing ks_ar with id: {ks_ar.id}")
-
+                # Get the trace from the ks_ar
+                trace = Trace(inst_id=ks_ar.trace)
+                cls.current_trace = trace
+                cls.current_ks_ar = ks_ar
                 # Get the hypothesis ids from the ks_ar
                 hypo_ids = ks_ar.input_hypotheses
                 if len(hypo_ids) != 1:
@@ -73,8 +77,6 @@ class ParseQuery(KnowledgeSource):
                 if not isinstance(hypo, smile.Query): #check if Phras
                     raise(Exception(f"Bad Input Hypothesis Type {type(hypo)}"))
 
-                # Get the trace from the ks_ar
-                trace = Trace(inst_id=ks_ar.trace)
                 
                 # Construct an instance of the ks_object
                 ks_object = cls(hypothesis_ids=hypo_ids, ks_ar=ks_ar, trace=trace)
@@ -96,7 +98,8 @@ class ParseQuery(KnowledgeSource):
                 ks_ar.summary(filename=filename)
 
                 ks_ar.ks_status = 3
-                                
+                cls.current_trace = None
+                cls.current_ks_ar = None
                 if not loop:
                     return ks_ar
             time.sleep(1)        
@@ -126,7 +129,9 @@ class ParseQuery(KnowledgeSource):
                 replace("\r",". ").          \
                 strip()
 
-        text = re.sub(r'\.+', '.', text)                
+        text = re.sub(r' +', ' ', text)
+        text = re.sub(r'\.+', '.', text)
+        text = re.sub(r' \.', '.', text)
         return text
 
     def cosine_score(self,text1, text2):
@@ -173,8 +178,26 @@ class ParseQuery(KnowledgeSource):
 
 if __name__ == '__main__':
     print('ParseQuery started')
-    add_ks.add_ks()
+    add_ks.add_ks(reload_db=False)
+    print('ParseQuery ready')
 
     with smile:
-        ParseQuery.process_ks_ars(loop=True)
+        while True:
+            try:
+                ParseQuery.process_ks_ars(loop=True)
+            except KeyboardInterrupt:
+                print('interrupted!')
+                break
+            except Exception as e:
+                print(f"{type(e)}: {e}")
+                if ParseQuery.current_ks_ar is not None:
+                    failed_ks_ar = ParseQuery.current_ks_ar
+                    org_status = failed_ks_ar.ks_status
+                    failed_ks_ar.ks_status = -1
+                    failed_ks_ar.save()
+                    error_message = f"Failed KSAF: {failed_ks_ar} with ks_status={org_status}"
+                    print(error_message)
+                    if ParseQuery.current_trace is not None:
+                        ParseQuery.logger(trace_id=ParseQuery.current_trace, text=error_message)
+                pass
 
