@@ -1,26 +1,22 @@
 #################################################################################
 # Start of configuration file
 #################################################################################
-# Store a local copy of the graph?
-STORE_LOCAL : False
 
-# For larger files need to create an index for quick lookup of local dict db.
-DB_INDEX_FIELDS : []
-
-# log file path
-LOG_FILE : './logs/test.log'
-
-
+# Directory where Logs are placed
+LOG_DIR : "../../smile-benchmark/logs/"
+LOG_FILE : "../../smile-benchmark/logs/smile_trace_log.txt"
 ##############################################################################################
-# GraphDB Configuration
+# Server and repository
 ##############################################################################################
 # Server where graph is stored
 SERVER_URL : "http://localhost:7200"
 # Repository where graph is stored
-REPOSITORY : 'py2graphdb_unit_tests'
+REPOSITORY : 'smile_test'
 # named graph where triples are stored, None if default graph
-GRAPH_NAME : "http://unit-test2"
+GRAPH_NAME : "http://smile"
 
 # Default Namespace
-NM : "http://utest/#"
-PREFIX : 'utest'
+NM : "http://smile/#"
+PREFIX : 'smile'
+
+DB_INDEX_FIELDS: []

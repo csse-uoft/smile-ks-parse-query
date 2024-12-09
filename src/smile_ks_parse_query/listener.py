@@ -1,4 +1,5 @@
 import re, os, pandas as pd
+import pprint
 from owlready2 import default_world, ObjectProperty, DataProperty, rdfs, Thing 
 from py2graphdb.config import config as CONFIG
 smile = default_world.get_ontology(CONFIG.NM)
@@ -95,7 +96,7 @@ class ParseQuery(KnowledgeSource):
                 # log output
                 LOG_FILE_TEMPLATE = CONFIG.LOG_DIR+'smile_trace_log.txt'
                 filename = LOG_FILE_TEMPLATE.replace('.txt', f"_{trace.id}.txt")
-                ks_ar.summary(filename=filename)
+                ks_ar.summary(filename=filename, method_info=ks_object.method_info)
 
                 ks_ar.ks_status = 3
                 cls.current_trace = None
@@ -164,11 +165,15 @@ class ParseQuery(KnowledgeSource):
 
     def set_input(self, query):
         self.query = query
+        self.method_info = ''
 
     def get_outputs(self):
                 
         content = self.clean_input(content=self.query)
-        certainty = self.cosine_score(self.query, content)  
+        certainty = self.cosine_score(self.query, content)
+        certainty_info = {f'certainty adjustment': f"cosine similarity between original and new query"}
+        self.method_info += pprint.pformat(certainty_info) + "\n"
+
         text = Text.find_generate(content=content, trace_id=self.trace.id, certainty=certainty)
 
         text.from_ks_ars = self.ks_ar.id
@@ -178,7 +183,7 @@ class ParseQuery(KnowledgeSource):
 
 if __name__ == '__main__':
     print('ParseQuery started')
-    add_ks.add_ks(reload_db=False)
+    add_ks.add_ks(reload_db=True)
     print('ParseQuery ready')
 
     with smile:

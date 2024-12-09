@@ -33,9 +33,9 @@ def gen_ksar(input:Text, output:Hypothesis, trace:Trace):
 
 smile = default_world.get_ontology(CONFIG.NM)
 with smile:
-    init_db.init_db()
+    # init_db.init_db()
     add_ks.add_ks()
-    init_db.load_owl('./smile_ks_parse_query/ontology_cache/cids.ttl')
+    # init_db.load_owl('./smile_ks_parse_query/ontology_cache/cids.ttl')
 
     description = "St.Mary's Church provides hot meals &amp; addiction support to 90% of homeless youth."
     trace = Trace(keep_db_in_synch=True)
