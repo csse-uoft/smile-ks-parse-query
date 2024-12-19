@@ -10,6 +10,7 @@ with smile:
 
     from smile_base.Model.knowledge_source.knowledge_source import KnowledgeSource    
     from smile_base.Model.data_level.hypothesis import Hypothesis
+    from smile_base.Model.data_level.org_certainty     import OrgCertainty
     from smile_base.Model.data_level.query      import Query
     from smile_base.Model.data_level.text      import Text
     from smile_base.Model.controller.ks        import Ks
@@ -170,20 +171,25 @@ class ParseQuery(KnowledgeSource):
     def get_outputs(self):
                 
         content = self.clean_input(content=self.query)
-        certainty = self.cosine_score(self.query, content)
+        new_certainty = self.cosine_score(self.query, content)
         certainty_info = {f'certainty adjustment': f"cosine similarity between original and new query"}
         self.method_info += pprint.pformat(certainty_info) + "\n"
 
-        text = Text.find_generate(content=content, trace_id=self.trace.id, certainty=certainty)
+        text = Text.find_generate(content=content, trace_id=self.trace.id, certainty=new_certainty)
 
         text.from_ks_ars = self.ks_ar.id
+        org_certainty = OrgCertainty.generate(hypothesis_id=text.id, ks_ar_id = self.ks_ar.id, trace_id=self.trace.id, certainty=new_certainty)
+        self.ks_ar.org_certainties = org_certainty.id
+        text.org_certainties = org_certainty.id
+
+
         self.store_hypotheses = [text]
 
         return self.store_hypotheses
 
 if __name__ == '__main__':
     print('ParseQuery started')
-    add_ks.add_ks(reload_db=True)
+    add_ks.add_ks(reload_db=False)
     print('ParseQuery ready')
 
     with smile:
@@ -200,7 +206,7 @@ if __name__ == '__main__':
                     org_status = failed_ks_ar.ks_status
                     failed_ks_ar.ks_status = -1
                     failed_ks_ar.save()
-                    error_message = f"Failed KSAF: {failed_ks_ar} with ks_status={org_status}"
+                    error_message = f"Failed KSAF(ParseQuery, cycle={failed_ks_ar.cycle})): {failed_ks_ar} with ks_status={org_status}"
                     print(error_message)
                     if ParseQuery.current_trace is not None:
                         ParseQuery.logger(trace_id=ParseQuery.current_trace, text=error_message)
